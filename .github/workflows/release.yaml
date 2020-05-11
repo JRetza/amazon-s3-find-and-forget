@@ -1,50 +1,29 @@
----
-
-name: Release Version
 on:
   push:
-    branches:
-      - master
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Create Release
+
 jobs:
-  release:
-    name: Release Version
+  build:
+    name: Create Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: git fetch --depth=1 origin +refs/tags/*:refs/tags/* || true
-      # Cache
-      - uses: actions/cache@v1
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      # Setup
-      - name: Set up Python 3.7
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.7
-      - name: Install virtualenv
-        run: pip install virtualenv
-      - name: Install dependencies
-        run: make setup-predeploy
-      # Release if required
-      - name: Set version
-        id: version
-        run: echo ::set-env name=THIS_VERSION::$(make version | sed s/^v//)
-      - name: Set latest
-        id: latest
-        run: echo ::set-env name=LATEST::$(git describe --tags $(git rev-list --tags --max-count=1) | sed s/^v// 2> /dev/null || echo '0')
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Create Release
         id: create_release
-        uses: actions/create-release@latest
-        if: env.THIS_VERSION > env.LATEST
+        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          tag_name: v${{ env.THIS_VERSION }}
-          release_name: Release v${{ env.THIS_VERSION }}
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
           body: |
-            See the CHANGELOG for a list of features included in this release
+            Changes in this Release
+            - First Change
+            - Second Change
           draft: false
-          prerelease: true
+          prerelease: false
